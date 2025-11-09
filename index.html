@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VitaLine - Secure Video Conferencing for Medical Emergencies (Prototype - Digital Health Teaching Unit)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Inter+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .mono { font-family: 'Inter Mono', monospace; }
+        .connection-pulse { animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        .emergency-glow { box-shadow: 0 0 20px rgba(220, 38, 38, 0.3); }
+        .video-overlay { background: linear-gradient(45deg, rgba(37, 99, 235, 0.1), rgba(220, 38, 38, 0.1)); }
+        .medical-card { backdrop-filter: blur(10px); background: rgba(255, 255, 255, 0.95); }
+        .triage-red { border-left: 4px solid #dc2626; background: rgba(220, 38, 38, 0.05); }
+        .triage-yellow { border-left: 4px solid #d97706; background: rgba(217, 119, 6, 0.05); }
+        .triage-green { border-left: 4px solid #059669; background: rgba(5, 150, 105, 0.05); }
+        .annotation-tool { cursor: crosshair; }
+        .screenshot-flash { animation: flash 0.3s ease-in-out; }
+        @keyframes flash { 0%, 100% { background: transparent; } 50% { background: rgba(255, 255, 255, 0.8); } }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Navigation Bar -->
+    <nav class="bg-white shadow-lg border-b-2 border-blue-600 fixed w-full top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-4">
+                    <div class="flex items-center space-x-2">
+                        <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                            <span class="text-white font-bold text-sm">VL</span>
+                        </div>
+                        <span class="text-xl font-bold text-gray-900">VitaLine</span>
+                    </div>
+                    <div class="hidden md:flex items-center space-x-4">
+                        <span class="text-sm text-gray-600">Secure Medical Video Platform</span>
+                    </div>
+                </div>
+                
+                <div class="flex items-center space-x-6">
+                    <!-- Connection Status -->
+                    <div class="flex items-center space-x-2">
+                        <div id="connection-status" class="w-3 h-3 bg-green-500 rounded-full connection-pulse"></div>
+                        <span class="text-sm font-medium text-gray-700">Connected</span>
+                    </div>
+                    
+                    <!-- Emergency Level -->
+                    <div id="emergency-level" class="px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm font-medium">
+                        LEVEL 1 - IMMEDIATE
+                    </div>
+                    
+                    <!-- Session Timer -->
+                    <div class="mono text-sm text-gray-600">
+                        <span id="session-timer">00:00:00</span>
+                    </div>
+                    
+                    <!-- Navigation Links -->
+                    <div class="flex space-x-4">
+                        <a href="index.html" class="text-blue-600 font-medium border-b-2 border-blue-600 pb-1">Video Conference</a>
+                        <a href="dashboard.html" class="text-gray-600 hover:text-blue-600 transition-colors">Assessment Dashboard</a>
+                        <a href="referral.html" class="text-gray-600 hover:text-blue-600 transition-colors">Referral System</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="pt-16 min-h-screen bg-gradient-to-br from-blue-50 to-red-50">
+        <!-- Hero Section -->
+        <div class="bg-white shadow-sm border-b">
+            <div class="max-w-7xl mx-auto px-4 py-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h1 class="text-3xl font-bold text-gray-900">Emergency Video Consultation</h1>
+                        <p class="text-sm text-red-600 font-semibold mt-1">Prototype — Digital Health Teaching Unit</p>
+                        <p class="text-gray-600 mt-1">Real-time visual assessment and emergency triage</p>
+                    </div>
+                    <div class="flex space-x-3">
+                        <button id="emergency-escalation" class="px-6 py-3 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition-colors emergency-glow">
+                            🚨 EMERGENCY ESCALATION
+                        </button>
+                        <button id="add-specialist" class="px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors">
+                            + Add Specialist
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Video Conference Interface -->
+        <div class="max-w-7xl mx-auto px-4 py-6">
+            <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                <!-- Main Video Area -->
+                <div class="lg:col-span-3">
+                    <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+                        <!-- Patient Video -->
+                        <div class="relative bg-gray-900 aspect-video">
+                            <div id="patient-video" class="w-full h-full bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center">
+                                <div class="text-center text-white">
+                                    <div class="w-24 h-24 bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
+                                        <span class="text-3xl">👤</span>
+                                    </div>
+                                    <p class="text-lg font-medium">Patient Video Feed</p>
+                                    <p class="text-sm text-gray-400">Connecting...</p>
+                                </div>
+                            </div>
+                            
+                            <!-- Video Controls Overlay -->
+                            <div class="absolute bottom-4 left-4 right-4 flex justify-between items-center">
+                                <div class="flex space-x-2">
+                                    <button id="mute-audio" class="p-3 bg-black bg-opacity-50 text-white rounded-full hover:bg-opacity-70 transition-all">
+                                        🎤
+                                    </button>
+                                    <button id="mute-video" class="p-3 bg-black bg-opacity-50 text-white rounded-full hover:bg-opacity-70 transition-all">
+                                        📹
+                                    </button>
+                                    <button id="annotation-mode" class="p-3 bg-black bg-opacity-50 text-white rounded-full hover:bg-opacity-70 transition-all">
+                                        ✏️
+                                    </button>
+                                </div>
+                                <button id="screenshot" class="p-3 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-all">
+                                    📸 Screenshot
+                                </button>
+                            </div>
+                            
+                            <!-- Screenshot Flash Effect -->
+                            <div id="screenshot-flash" class="absolute inset-0 pointer-events-none"></div>
+                        </div>
+                        
+                        <!-- Healthcare Professional Video -->
+                        <div class="absolute top-4 right-4 w-48 h-32 bg-gray-800 rounded-lg overflow-hidden border-2 border-white">
+                            <div id="professional-video" class="w-full h-full bg-gradient-to-br from-gray-700 to-gray-800 flex items-center justify-center">
+                                <div class="text-center text-white">
+                                    <div class="w-12 h-12 bg-gray-600 rounded-full flex items-center justify-center mx-auto mb-2">
+                                        <span class="text-lg">👨‍⚕️</span>
+                                    </div>
+                                    <p class="text-xs">Dr. Smith</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Video Status Bar -->
+                    <div class="mt-4 bg-white rounded-lg p-4 shadow-sm">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-6">
+                                <div class="flex items-center space-x-2">
+                                    <div class="w-3 h-3 bg-green-500 rounded-full connection-pulse"></div>
+                                    <span class="text-sm font-medium">Video Quality: HD</span>
+                                </div>
+                                <div class="flex items-center space-x-2">
+                                    <div class="w-3 h-3 bg-green-500 rounded-full connection-pulse"></div>
+                                    <span class="text-sm font-medium">Audio: Clear</span>
+                                </div>
+                                <div class="flex items-center space-x-2">
+                                    <div class="w-3 h-3 bg-yellow-500 rounded-full connection-pulse"></div>
+                                    <span class="text-sm font-medium">Latency: 45ms</span>
+                                </div>
+                            </div>
+                            <div class="text-sm text-gray-600">
+                                Connection secured with end-to-end encryption
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Assessment Sidebar -->
+                <div class="lg:col-span-1 space-y-6">
+                    <!-- Quick Assessment Panel -->
+                    <div class="medical-card rounded-xl p-6 shadow-lg">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Quick Assessment</h3>
+                        
+                        <!-- Triage Level -->
+                        <div class="mb-6">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Triage Level</label>
+                            <select id="triage-select" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                <option value="red" class="triage-red">🔴 Immediate (Red)</option>
+                                <option value="yellow" class="triage-yellow" selected>🟡 Urgent (Yellow)</option>
+                                <option value="green" class="triage-green">🟢 Delayed (Green)</option>
+                            </select>
+                        </div>
+                        
+                        <!-- Vital Signs Quick Input -->
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Heart Rate</label>
+                                <input type="number" id="heart-rate" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="bpm">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Blood Pressure</label>
+                                <input type="text" id="blood-pressure" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="120/80">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">O2 Saturation</label>
+                                <input type="number" id="oxygen-sat" class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="%">
+                            </div>
+                        </div>
+                        
+                        <button id="update-vitals" class="w-full mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                            Update Vitals
+                        </button>
+                    </div>
+                    
+                    <!-- Emergency Actions -->
+                    <div class="medical-card rounded-xl p-6 shadow-lg">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Emergency Actions</h3>
+                        
+                        <div class="space-y-3">
+                            <button id="dispatch-ambulance" class="w-full px-4 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium">
+                                🚑 Dispatch Ambulance
+                            </button>
+                            <button id="alert-specialist" class="w-full px-4 py-3 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors font-medium">
+                                📞 Alert Specialist
+                            </button>
+                            <button id="document-incident" class="w-full px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium">
+                                📝 Document Incident
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Connection Log -->
+                    <div class="medical-card rounded-xl p-6 shadow-lg">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Connection Log</h3>
+                        
+                        <div id="connection-log" class="space-y-2 max-h-48 overflow-y-auto">
+                            <div class="text-sm text-gray-600 mono">
+                                <span class="text-blue-600">[14:23:45]</span> Connection established
+                            </div>
+                            <div class="text-sm text-gray-600 mono">
+                                <span class="text-green-600">[14:23:52]</span> Video feed active
+                            </div>
+                            <div class="text-sm text-gray-600 mono">
+                                <span class="text-yellow-600">[14:24:15]</span> Assessment started
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t mt-12">
+        <div class="max-w-7xl mx-auto px-4 py-6">
+            <div class="text-center text-sm text-gray-600">
+                <p>&copy; 2025 VitaLine. Secure medical video conferencing platform for emergency healthcare.</p>
+                <p class="mt-1">Prototype for the Digital Health Teaching Unit • HIPAA compliant • End-to-end encrypted • Real-time emergency assessment</p>
+                <p class="mt-1">Collaborators: Bensaid Anir, Bensalem Mira, El Bichara Yacine, Khalaji Niloofar</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="main.js"></script>
+</body>
+</html>

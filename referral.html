@@ -1,0 +1,988 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Referral System - EmergencyConnect</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Inter+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .mono { font-family: 'Inter Mono', monospace; }
+        .connection-pulse { animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        .medical-card { backdrop-filter: blur(10px); background: rgba(255, 255, 255, 0.95); }
+        .hospital-card { transition: all 0.3s ease; cursor: pointer; }
+        .hospital-card:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(0,0,0,0.1); }
+        .hospital-card.selected { border-color: #2563eb; background: rgba(37, 99, 235, 0.05); }
+        .specialist-online { position: relative; }
+        .specialist-online::after { content: ''; position: absolute; top: 0; right: 0; width: 12px; height: 12px; background: #10b981; border: 2px solid white; border-radius: 50%; }
+        .ambulance-tracking { background: linear-gradient(45deg, #f3f4f6, #e5e7eb); }
+        .eta-countdown { animation: countdown 1s infinite; }
+        @keyframes countdown { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Navigation Bar -->
+    <nav class="bg-white shadow-lg border-b-2 border-blue-600 fixed w-full top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-4">
+                    <div class="flex items-center space-x-2">
+                        <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                            <span class="text-white font-bold text-sm">EC</span>
+                        </div>
+                        <span class="text-xl font-bold text-gray-900">EmergencyConnect</span>
+                    </div>
+                    <div class="hidden md:flex items-center space-x-4">
+                        <span class="text-sm text-gray-600">Emergency Referral System</span>
+                    </div>
+                </div>
+                
+                <div class="flex items-center space-x-6">
+                    <!-- Connection Status -->
+                    <div class="flex items-center space-x-2">
+                        <div class="w-3 h-3 bg-green-500 rounded-full connection-pulse"></div>
+                        <span class="text-sm font-medium text-gray-700">Connected</span>
+                    </div>
+                    
+                    <!-- Patient Status -->
+                    <div class="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm font-medium">
+                        Referral: John Doe (45M)
+                    </div>
+                    
+                    <!-- Navigation Links -->
+                    <div class="flex space-x-4">
+                        <a href="index.html" class="text-gray-600 hover:text-blue-600 transition-colors">Video Conference</a>
+                        <a href="dashboard.html" class="text-gray-600 hover:text-blue-600 transition-colors">Assessment Dashboard</a>
+                        <a href="referral.html" class="text-blue-600 font-medium border-b-2 border-blue-600 pb-1">Referral System</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="pt-16 min-h-screen bg-gradient-to-br from-blue-50 to-red-50">
+        <!-- Header -->
+        <div class="bg-white shadow-sm border-b">
+            <div class="max-w-7xl mx-auto px-4 py-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h1 class="text-3xl font-bold text-gray-900">Emergency Referral System</h1>
+                        <p class="text-gray-600 mt-1">Hospital routing, specialist consultation, and emergency coordination</p>
+                    </div>
+                    <div class="flex space-x-3">
+                        <button id="activate-referral" class="px-6 py-3 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition-colors">
+                            🚨 Activate Referral
+                        </button>
+                        <button id="notify-family" class="px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors">
+                            📞 Notify Family
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Referral Content -->
+        <div class="max-w-7xl mx-auto px-4 py-6">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Left Column - Hospital Network -->
+                <div class="lg:col-span-1 space-y-6">
+                    <!-- Hospital Capacity Dashboard -->
+                    <div class="medical-card rounded-xl p-6 shadow-lg">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                            🏥 Hospital Network
+                            <span class="ml-2 px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-medium">LIVE</span>
+                        </h3>
+                        
+                        <div class="space-y-4">
+                            <!-- Hospital 1 -->
+                            <div class="hospital-card border-2 border-gray-200 rounded-lg p-4 selected">
+                                <div class="flex items-start justify-between mb-3">
+                                    <div>
+                                        <h4 class="font-semibold text-gray-900">General Medical Center</h4>
+                                        <p class="text-sm text-gray-600">3.2 miles • 8 min drive</p>
+                                    </div>
+                                    <div class="text-right">
+                                        <div class="text-sm font-medium text-green-600">✅ AVAILABLE</div>
+                                        <div class="text-xs text-gray-500">Cardiac ICU: 3 beds</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="grid grid-cols-3 gap-2 text-xs mb-3">
+                                    <div class="text-center">
+                                        <div class="font-medium text-gray-900">ED Capacity</div>
+                                        <div class="text-green-600">85%</div>
+                                    </div>
+                                    <div class="text-center">
+                                        <div class="font-medium text-gray-900">Wait Time</div>
+                                        <div class="text-yellow-600">12 min</div>
+                                    </div>
+                                    <div class="text-center">
+                                        <div class="font-medium text-gray-900">Cath Lab</div>
+                                        <div class="text-green-600">Ready</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="flex items-center justify-between">
+                                    <div class="flex space-x-1">
+                                        <span class="px-2 py-1 bg-red-100 text-red-800 rounded text-xs">Cardiac</span>
+                                        <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">Trauma</span>
+                                        <span class="px-2 py-1 bg-green-100 text-green-800 rounded text-xs">Stroke</span>
+                                    </div>
+                                    <button class="text-blue-600 hover:text-blue-800 text-sm font-medium">Select →</button>
+                                </div>
+                            </div>
+                            
+                            <!-- Hospital 2 -->
+                            <div class="hospital-card border-2 border-gray-200 rounded-lg p-4">
+                                <div class="flex items-start justify-between mb-3">
+                                    <div>
+                                        <h4 class="font-semibold text-gray-900">Regional Heart Institute</h4>
+                                        <p class="text-sm text-gray-600">5.7 miles • 12 min drive</p>
+                                    </div>
+                                    <div class="text-right">
+                                        <div class="text-sm font-medium text-yellow-600">⚠️ LIMITED</div>
+                                        <div class="text-xs text-gray-500">Cardiac ICU: 1 bed</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="grid grid-cols-3 gap-2 text-xs mb-3">
+                                    <div class="text-center">
+                                        <div class="font-medium text-gray-900">ED Capacity</div>
+                                        <div class="text-red-600">95%</div>
+                                    </div>
+                                    <div class="text-center">
+                                        <div class="font-medium text-gray-900">Wait Time</div>
+                                        <div class="text-red-600">25 min</div>
+                                    </div>
+                                    <div class="text-center">
+                                        <div class="font-medium text-gray-900">Cath Lab</div>
+                                        <div class="text-yellow-600">Busy</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="flex items-center justify-between">
+                                    <div class="flex space-x-1">
+                                        <span class="px-2 py-1 bg-red-100 text-red-800 rounded text-xs">Cardiac Only</span>
+                                    </div>
+                                    <button class="text-blue-600 hover:text-blue-800 text-sm font-medium">Select →</button>
+                                </div>
+                            </div>
+                            
+                            <!-- Hospital 3 -->
+                            <div class="hospital-card border-2 border-gray-200 rounded-lg p-4">
+                                <div class="flex items-start justify-between mb-3">
+                                    <div>
+                                        <h4 class="font-semibold text-gray-900">Community Hospital</h4>
+                                        <p class="text-sm text-gray-600">2.1 miles • 6 min drive</p>
+                                    </div>
+                                    <div class="text-right">
+                                        <div class="text-sm font-medium text-red-600">❌ FULL</div>
+                                        <div class="text-xs text-gray-500">No cardiac beds</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="grid grid-cols-3 gap-2 text-xs mb-3">
+                                    <div class="text-center">
+                                        <div class="font-medium text-gray-900">ED Capacity</div>
+                                        <div class="text-red-600">100%</div>
+                                    </div>
+                                    <div class="text-center">
+                                        <div class="font-medium text-gray-900">Wait Time</div>
+                                        <div class="text-red-600">45+ min</div>
+                                    </div>
+                                    <div class="text-center">
+                                        <div class="font-medium text-gray-900">Cath Lab</div>
+                                        <div class="text-red-600">Offline</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="flex items-center justify-between">
+                                    <div class="flex space-x-1">
+                                        <span class="px-2 py-1 bg-gray-100 text-gray-800 rounded text-xs">Basic Care</span>
+                                    </div>
+                                    <button class="text-gray-400 text-sm font-medium cursor-not-allowed">Unavailable</button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                            <p class="text-sm text-blue-800">
+                                <strong>Recommendation:</strong> General Medical Center selected as primary destination based on capacity and cardiac specialization.
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <!-- Ambulance Dispatch -->
+                    <div class="medical-card rounded-xl p-6 shadow-lg">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                            🚑 Ambulance Dispatch
+                            <span class="ml-2 w-3 h-3 bg-green-500 rounded-full connection-pulse"></span>
+                        </h3>
+                        
+                        <div class="ambulance-tracking rounded-lg p-4 mb-4">
+                            <div class="flex items-center justify-between mb-4">
+                                <div>
+                                    <h4 class="font-semibold text-gray-900">Medic 42</h4>
+                                    <p class="text-sm text-gray-600">Advanced Life Support Unit</p>
+                                </div>
+                                <div class="text-right">
+                                    <div class="eta-countdown text-2xl font-bold text-blue-600 mono">ETA: 6:23</div>
+                                    <div class="text-xs text-gray-500">2.1 miles away</div>
+                                </div>
+                            </div>
+                            
+                            <div class="w-full bg-gray-200 rounded-full h-2 mb-4">
+                                <div class="bg-blue-600 h-2 rounded-full" style="width: 65%"></div>
+                            </div>
+                            
+                            <div class="grid grid-cols-3 gap-4 text-sm">
+                                <div class="text-center">
+                                    <div class="font-medium text-gray-900">Crew</div>
+                                    <div class="text-gray-600">2 EMTs, 1 Paramedic</div>
+                                </div>
+                                <div class="text-center">
+                                    <div class="font-medium text-gray-900">Equipment</div>
+                                    <div class="text-gray-600">Cardiac Monitor, Defib</div>
+                                </div>
+                                <div class="text-center">
+                                    <div class="font-medium text-gray-900">Status</div>
+                                    <div class="text-green-600">En Route</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="flex space-x-3">
+                            <button id="track-ambulance" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium">
+                                📍 Track Location
+                            </button>
+                            <button id="contact-crew" class="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium">
+                                📞 Contact Crew
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Center Column - Specialist Network -->
+                <div class="lg:col-span-1 space-y-6">
+                    <!-- On-Call Specialists -->
+                    <div class="medical-card rounded-xl p-6 shadow-lg">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                            👨‍⚕️ On-Call Specialists
+                            <span class="ml-2 px-2 py-1 bg-green-100 text-green-800 rounded text-xs font-medium">5 ONLINE</span>
+                        </h3>
+                        
+                        <div class="space-y-4">
+                            <!-- Cardiologist -->
+                            <div class="border border-gray-200 rounded-lg p-4 hover:border-blue-300 transition-colors">
+                                <div class="flex items-center space-x-4">
+                                    <div class="specialist-online w-12 h-12 bg-gradient-to-br from-red-500 to-red-600 rounded-full flex items-center justify-center">
+                                        <span class="text-white font-semibold text-sm">Dr.SJ</span>
+                                    </div>
+                                    <div class="flex-1">
+                                        <h4 class="font-semibold text-gray-900">Dr. Sarah Johnson</h4>
+                                        <p class="text-sm text-gray-600">Cardiologist</p>
+                                        <div class="flex items-center space-x-2 mt-1">
+                                            <span class="px-2 py-1 bg-green-100 text-green-800 rounded text-xs">Available</span>
+                                            <span class="text-xs text-gray-500">Response: < 2 min</span>
+                                        </div>
+                                    </div>
+                                    <button class="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium">
+                                        Consult
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Emergency Physician -->
+                            <div class="border border-gray-200 rounded-lg p-4 hover:border-blue-300 transition-colors">
+                                <div class="flex items-center space-x-4">
+                                    <div class="specialist-online w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-full flex items-center justify-center">
+                                        <span class="text-white font-semibold text-sm">Dr.RC</span>
+                                    </div>
+                                    <div class="flex-1">
+                                        <h4 class="font-semibold text-gray-900">Dr. Robert Chen</h4>
+                                        <p class="text-sm text-gray-600">Emergency Medicine</p>
+                                        <div class="flex items-center space-x-2 mt-1">
+                                            <span class="px-2 py-1 bg-green-100 text-green-800 rounded text-xs">Available</span>
+                                            <span class="text-xs text-gray-500">Response: < 1 min</span>
+                                        </div>
+                                    </div>
+                                    <button class="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium">
+                                        Consult
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Trauma Surgeon -->
+                            <div class="border border-gray-200 rounded-lg p-4 hover:border-blue-300 transition-colors">
+                                <div class="flex items-center space-x-4">
+                                    <div class="specialist-online w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-full flex items-center justify-center">
+                                        <span class="text-white font-semibold text-sm">Dr.ER</span>
+                                    </div>
+                                    <div class="flex-1">
+                                        <h4 class="font-semibold text-gray-900">Dr. Emily Rodriguez</h4>
+                                        <p class="text-sm text-gray-600">Trauma Surgery</p>
+                                        <div class="flex items-center space-x-2 mt-1">
+                                            <span class="px-2 py-1 bg-yellow-100 text-yellow-800 rounded text-xs">Busy</span>
+                                            <span class="text-xs text-gray-500">Response: ~5 min</span>
+                                        </div>
+                                    </div>
+                                    <button class="px-3 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors text-sm font-medium">
+                                        Queue
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <!-- Anesthesiologist -->
+                            <div class="border border-gray-200 rounded-lg p-4 hover:border-blue-300 transition-colors">
+                                <div class="flex items-center space-x-4">
+                                    <div class="w-12 h-12 bg-gradient-to-br from-gray-400 to-gray-500 rounded-full flex items-center justify-center">
+                                        <span class="text-white font-semibold text-sm">Dr.MT</span>
+                                    </div>
+                                    <div class="flex-1">
+                                        <h4 class="font-semibold text-gray-900">Dr. Michael Thompson</h4>
+                                        <p class="text-sm text-gray-600">Anesthesiology</p>
+                                        <div class="flex items-center space-x-2 mt-1">
+                                            <span class="px-2 py-1 bg-red-100 text-red-800 rounded text-xs">Offline</span>
+                                            <span class="text-xs text-gray-500">Next available: 15 min</span>
+                                        </div>
+                                    </div>
+                                    <button class="px-3 py-2 bg-gray-400 text-white rounded-lg cursor-not-allowed text-sm font-medium" disabled>
+                                        Unavailable
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                            <p class="text-sm text-blue-800">
+                                <strong>Recommendation:</strong> Dr. Sarah Johnson (Cardiologist) recommended for cardiac consultation.
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <!-- Medical Record Transfer -->
+                    <div class="medical-card rounded-xl p-6 shadow-lg">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Medical Record Transfer</h3>
+                        
+                        <div class="space-y-4">
+                            <div class="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-lg">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                                        <span class="text-white text-sm">✓</span>
+                                    </div>
+                                    <div>
+                                        <div class="font-medium text-green-800">Patient Demographics</div>
+                                        <div class="text-sm text-green-600">Transferred successfully</div>
+                                    </div>
+                                </div>
+                                <span class="text-xs text-green-600 mono">14:36:22</span>
+                            </div>
+                            
+                            <div class="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-lg">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                                        <span class="text-white text-sm">✓</span>
+                                    </div>
+                                    <div>
+                                        <div class="font-medium text-green-800">Vital Signs History</div>
+                                        <div class="text-sm text-green-600">Transferred successfully</div>
+                                    </div>
+                                </div>
+                                <span class="text-xs text-green-600 mono">14:36:25</span>
+                            </div>
+                            
+                            <div class="flex items-center justify-between p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-8 h-8 bg-yellow-500 rounded-full flex items-center justify-center">
+                                        <span class="text-white text-sm">⏳</span>
+                                    </div>
+                                    <div>
+                                        <div class="font-medium text-yellow-800">Assessment Summary</div>
+                                        <div class="text-sm text-yellow-600">In progress...</div>
+                                    </div>
+                                </div>
+                                <span class="text-xs text-yellow-600 mono">Processing</span>
+                            </div>
+                            
+                            <div class="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-lg">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-8 h-8 bg-gray-400 rounded-full flex items-center justify-center">
+                                        <span class="text-white text-sm">⏸</span>
+                                    </div>
+                                    <div>
+                                        <div class="font-medium text-gray-800">Imaging Results</div>
+                                        <div class="text-sm text-gray-600">Pending</div>
+                                    </div>
+                                </div>
+                                <span class="text-xs text-gray-600 mono">Queued</span>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4">
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div class="bg-blue-600 h-2 rounded-full" style="width: 60%"></div>
+                            </div>
+                            <div class="flex justify-between text-xs text-gray-600 mt-1">
+                                <span>Transfer Progress</span>
+                                <span>60% Complete</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Right Column - Communication & Coordination -->
+                <div class="lg:col-span-1 space-y-6">
+                    <!-- Family Notification -->
+                    <div class="medical-card rounded-xl p-6 shadow-lg">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                            👨‍👩‍👧‍👦 Family Notification
+                            <span class="ml-2 px-2 py-1 bg-green-100 text-green-800 rounded text-xs font-medium">SENT</span>
+                        </h3>
+                        
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Primary Contact</label>
+                                <div class="p-3 bg-gray-50 rounded-lg">
+                                    <div class="font-medium text-gray-900">Jane Doe (Spouse)</div>
+                                    <div class="text-sm text-gray-600">(555) 123-4567</div>
+                                    <div class="text-sm text-green-600 mt-1">✅ Notified via SMS & Call</div>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Message Sent</label>
+                                <div class="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                                    <p class="text-sm text-blue-800">
+                                        "EMERGENCY: John has been transported to General Medical Center for cardiac evaluation. 
+                                        Ambulance ETA: 6 minutes. Room 342. Dr. Sarah Johnson attending."
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            <div class="grid grid-cols-2 gap-3">
+                                <button id="update-family" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium">
+                                    📱 Send Update
+                                </button>
+                                <button id="call-family" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium">
+                                    📞 Call Family
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Emergency Services Coordination -->
+                    <div class="medical-card rounded-xl p-6 shadow-lg">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Emergency Services Coordination</h3>
+                        
+                        <div class="space-y-4">
+                            <div class="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-lg">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                                        <span class="text-white text-sm">🚑</span>
+                                    </div>
+                                    <div>
+                                        <div class="font-medium text-green-800">Ambulance Service</div>
+                                        <div class="text-sm text-green-600">Dispatched & En Route</div>
+                                    </div>
+                                </div>
+                                <span class="text-xs text-green-600 mono">14:34:12</span>
+                            </div>
+                            
+                            <div class="flex items-center justify-between p-3 bg-green-50 border border-green-200 rounded-lg">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                                        <span class="text-white text-sm">🏥</span>
+                                    </div>
+                                    <div>
+                                        <div class="font-medium text-green-800">Receiving Hospital</div>
+                                        <div class="text-sm text-green-600">Alerted & Prepared</div>
+                                    </div>
+                                </div>
+                                <span class="text-xs text-green-600 mono">14:34:45</span>
+                            </div>
+                            
+                            <div class="flex items-center justify-between p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-8 h-8 bg-yellow-500 rounded-full flex items-center justify-center">
+                                        <span class="text-white text-sm">👨‍⚕️</span>
+                                    </div>
+                                    <div>
+                                        <div class="font-medium text-yellow-800">Cardiology Team</div>
+                                        <div class="text-sm text-yellow-600">Standby Mode</div>
+                                    </div>
+                                </div>
+                                <span class="text-xs text-yellow-600 mono">14:35:20</span>
+                            </div>
+                            
+                            <div class="flex items-center justify-between p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                                <div class="flex items-center space-x-3">
+                                    <div class="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                                        <span class="text-white text-sm">🚔</span>
+                                    </div>
+                                    <div>
+                                        <div class="font-medium text-blue-800">Traffic Control</div>
+                                        <div class="text-sm text-blue-600">Route Optimized</div>
+                                    </div>
+                                </div>
+                                <span class="text-xs text-blue-600 mono">14:35:45</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Referral Summary -->
+                    <div class="medical-card rounded-xl p-6 shadow-lg">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Referral Summary</h3>
+                        
+                        <div class="space-y-3">
+                            <div class="flex justify-between">
+                                <span class="text-sm font-medium text-gray-700">Patient:</span>
+                                <span class="text-sm text-gray-900">John Doe (45M)</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-sm font-medium text-gray-700">Condition:</span>
+                                <span class="text-sm text-yellow-600">Suspected ACS</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-sm font-medium text-gray-700">Priority:</span>
+                                <span class="text-sm text-red-600">URGENT</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-sm font-medium text-gray-700">Destination:</span>
+                                <span class="text-sm text-gray-900">General Medical Center</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-sm font-medium text-gray-700">Transport:</span>
+                                <span class="text-sm text-blue-600">Medic 42 (ALS)</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-sm font-medium text-gray-700">ETA:</span>
+                                <span class="text-sm text-gray-900 mono">14:42:15</span>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                            <p class="text-sm text-red-800">
+                                <strong>Critical Note:</strong> Patient requires immediate cardiac evaluation. 
+                                Potential STEMI - activate cath lab protocol.
+                            </p>
+                        </div>
+                        
+                        <button id="complete-referral" class="w-full mt-4 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium">
+                            ✅ Complete Referral
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t mt-12">
+        <div class="max-w-7xl mx-auto px-4 py-6">
+            <div class="text-center text-sm text-gray-600">
+                <p>&copy; 2025 EmergencyConnect. Secure medical video conferencing platform for emergency healthcare.</p>
+                <p class="mt-1">HIPAA compliant • End-to-end encrypted • Real-time emergency assessment</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Referral System JavaScript
+        class ReferralSystem {
+            constructor() {
+                this.selectedHospital = 'general-medical';
+                this.ambulanceETA = 383; // 6 minutes 23 seconds in seconds
+                this.init();
+            }
+            
+            init() {
+                this.initializeEventListeners();
+                this.startETACountdown();
+                this.initializeHospitalSelection();
+                this.simulateRealTimeUpdates();
+            }
+            
+            initializeEventListeners() {
+                // Main Actions
+                document.getElementById('activate-referral')?.addEventListener('click', () => {
+                    this.activateReferral();
+                });
+                
+                document.getElementById('notify-family')?.addEventListener('click', () => {
+                    this.notifyFamily();
+                });
+                
+                document.getElementById('complete-referral')?.addEventListener('click', () => {
+                    this.completeReferral();
+                });
+                
+                // Ambulance Controls
+                document.getElementById('track-ambulance')?.addEventListener('click', () => {
+                    this.trackAmbulance();
+                });
+                
+                document.getElementById('contact-crew')?.addEventListener('click', () => {
+                    this.contactCrew();
+                });
+                
+                // Family Communication
+                document.getElementById('update-family')?.addEventListener('click', () => {
+                    this.updateFamily();
+                });
+                
+                document.getElementById('call-family')?.addEventListener('click', () => {
+                    this.callFamily();
+                });
+            }
+            
+            initializeHospitalSelection() {
+                const hospitalCards = document.querySelectorAll('.hospital-card');
+                hospitalCards.forEach(card => {
+                    card.addEventListener('click', () => {
+                        // Remove selection from all cards
+                        hospitalCards.forEach(c => c.classList.remove('selected'));
+                        // Add selection to clicked card
+                        card.classList.add('selected');
+                        
+                        this.selectedHospital = card.dataset.hospital || 'general-medical';
+                        this.showNotification('Hospital selection updated', 'success');
+                    });
+                });
+            }
+            
+            startETACountdown() {
+                setInterval(() => {
+                    if (this.ambulanceETA > 0) {
+                        this.ambulanceETA--;
+                        this.updateETADisplay();
+                    }
+                }, 1000);
+            }
+            
+            updateETADisplay() {
+                const minutes = Math.floor(this.ambulanceETA / 60);
+                const seconds = this.ambulanceETA % 60;
+                const etaElement = document.querySelector('.eta-countdown');
+                if (etaElement) {
+                    etaElement.textContent = `ETA: ${minutes}:${seconds.toString().padStart(2, '0')}`;
+                }
+            }
+            
+            activateReferral() {
+                const modal = this.createActivationModal();
+                document.body.appendChild(modal);
+                
+                anime({
+                    targets: modal,
+                    opacity: [0, 1],
+                    scale: [0.8, 1],
+                    duration: 300,
+                    easing: 'easeOutQuart'
+                });
+            }
+            
+            createActivationModal() {
+                const modal = document.createElement('div');
+                modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+                modal.innerHTML = `
+                    <div class="bg-white rounded-xl p-8 max-w-lg w-full mx-4">
+                        <div class="text-center">
+                            <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <span class="text-2xl">🚨</span>
+                            </div>
+                            <h3 class="text-xl font-bold text-gray-900 mb-2">Emergency Referral Activated</h3>
+                            <p class="text-gray-600 mb-6">All emergency services have been notified and are coordinating response.</p>
+                            
+                            <div class="space-y-3 mb-6">
+                                <div class="flex items-center space-x-3 text-sm p-2 bg-green-50 rounded">
+                                    <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                                    <span>General Medical Center - Emergency Department alerted</span>
+                                </div>
+                                <div class="flex items-center space-x-3 text-sm p-2 bg-green-50 rounded">
+                                    <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                                    <span>Medic 42 - ALS Unit dispatched</span>
+                                </div>
+                                <div class="flex items-center space-x-3 text-sm p-2 bg-yellow-50 rounded">
+                                    <div class="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                                    <span>Cardiology team - Standby activated</span>
+                                </div>
+                                <div class="flex items-center space-x-3 text-sm p-2 bg-green-50 rounded">
+                                    <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                                    <span>Traffic control - Route cleared</span>
+                                </div>
+                            </div>
+                            
+                            <button class="w-full px-6 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors" onclick="this.parentElement.parentElement.parentElement.remove()">
+                                Confirm Activation
+                            </button>
+                        </div>
+                    </div>
+                `;
+                return modal;
+            }
+            
+            notifyFamily() {
+                this.showNotification('Family notification sent successfully', 'success');
+                
+                // Update family notification status
+                const statusElement = document.querySelector('.medical-card h3 span');
+                if (statusElement) {
+                    statusElement.textContent = 'SENT';
+                    statusElement.className = 'ml-2 px-2 py-1 bg-green-100 text-green-800 rounded text-xs font-medium';
+                }
+            }
+            
+            trackAmbulance() {
+                const modal = this.createTrackingModal();
+                document.body.appendChild(modal);
+                
+                anime({
+                    targets: modal,
+                    opacity: [0, 1],
+                    scale: [0.8, 1],
+                    duration: 300,
+                    easing: 'easeOutQuart'
+                });
+            }
+            
+            createTrackingModal() {
+                const modal = document.createElement('div');
+                modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+                modal.innerHTML = `
+                    <div class="bg-white rounded-xl p-8 max-w-2xl w-full mx-4">
+                        <div class="text-center mb-6">
+                            <h3 class="text-xl font-bold text-gray-900 mb-2">Ambulance Tracking</h3>
+                            <p class="text-gray-600">Real-time location and status updates</p>
+                        </div>
+                        
+                        <div class="bg-gray-100 rounded-lg p-6 mb-6">
+                            <div class="flex items-center justify-center h-64 bg-gray-200 rounded-lg">
+                                <div class="text-center">
+                                    <div class="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                                        <span class="text-white text-2xl">🚑</span>
+                                    </div>
+                                    <p class="text-gray-600">Live GPS tracking map</p>
+                                    <p class="text-sm text-gray-500">2.1 miles from destination</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-3 gap-4 mb-6">
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-blue-600 mono">6:23</div>
+                                <div class="text-sm text-gray-600">ETA</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-green-600">65</div>
+                                <div class="text-sm text-gray-600">mph</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-orange-600">2.1</div>
+                                <div class="text-sm text-gray-600">miles</div>
+                            </div>
+                        </div>
+                        
+                        <button class="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors" onclick="this.parentElement.parentElement.remove()">
+                            Close Tracking
+                        </button>
+                    </div>
+                `;
+                return modal;
+            }
+            
+            contactCrew() {
+                this.showNotification('Connecting to ambulance crew...', 'info');
+                
+                setTimeout(() => {
+                    this.showNotification('Connected to Medic 42 crew', 'success');
+                }, 2000);
+            }
+            
+            updateFamily() {
+                this.showNotification('Family update sent successfully', 'success');
+            }
+            
+            callFamily() {
+                this.showNotification('Initiating family call...', 'info');
+                
+                setTimeout(() => {
+                    this.showNotification('Family call connected', 'success');
+                }, 1500);
+            }
+            
+            completeReferral() {
+                const modal = this.createCompletionModal();
+                document.body.appendChild(modal);
+                
+                anime({
+                    targets: modal,
+                    opacity: [0, 1],
+                    scale: [0.8, 1],
+                    duration: 300,
+                    easing: 'easeOutQuart'
+                });
+            }
+            
+            createCompletionModal() {
+                const modal = document.createElement('div');
+                modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+                modal.innerHTML = `
+                    <div class="bg-white rounded-xl p-8 max-w-lg w-full mx-4">
+                        <div class="text-center">
+                            <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <span class="text-2xl">✅</span>
+                            </div>
+                            <h3 class="text-xl font-bold text-gray-900 mb-2">Referral Completed</h3>
+                            <p class="text-gray-600 mb-6">Patient successfully transferred to emergency care system.</p>
+                            
+                            <div class="bg-gray-50 rounded-lg p-4 mb-6 text-left">
+                                <h4 class="font-semibold text-gray-900 mb-2">Transfer Summary:</h4>
+                                <div class="space-y-1 text-sm">
+                                    <div class="flex justify-between">
+                                        <span>Patient:</span>
+                                        <span>John Doe (45M)</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span>Destination:</span>
+                                        <span>General Medical Center</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span>Ambulance:</span>
+                                        <span>Medic 42 (ETA: 6:23)</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span>Attending:</span>
+                                        <span>Dr. Sarah Johnson</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span>Status:</span>
+                                        <span class="text-green-600">En Route</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button class="w-full px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors" onclick="this.parentElement.parentElement.parentElement.remove()">
+                                Complete Session
+                            </button>
+                        </div>
+                    </div>
+                `;
+                return modal;
+            }
+            
+            simulateRealTimeUpdates() {
+                // Simulate hospital capacity changes
+                setInterval(() => {
+                    const capacityElements = document.querySelectorAll('.hospital-card');
+                    capacityElements.forEach(card => {
+                        if (Math.random() > 0.8) { // 20% chance of update
+                            const capacityElement = card.querySelector('[data-capacity]');
+                            if (capacityElement) {
+                                const currentCapacity = parseInt(capacityElement.textContent);
+                                const change = Math.floor(Math.random() * 6) - 3; // ±3%
+                                const newCapacity = Math.max(60, Math.min(100, currentCapacity + change));
+                                capacityElement.textContent = `${newCapacity}%`;
+                                
+                                // Update color based on capacity
+                                if (newCapacity > 95) {
+                                    capacityElement.className = 'text-red-600';
+                                } else if (newCapacity > 85) {
+                                    capacityElement.className = 'text-yellow-600';
+                                } else {
+                                    capacityElement.className = 'text-green-600';
+                                }
+                            }
+                        }
+                    });
+                }, 10000);
+                
+                // Simulate specialist status changes
+                setInterval(() => {
+                    const specialistCards = document.querySelectorAll('.specialist-online');
+                    specialistCards.forEach(card => {
+                        if (Math.random() > 0.9) { // 10% chance of status change
+                            const statusElement = card.parentElement.querySelector('.px-2');
+                            if (statusElement) {
+                                const statuses = [
+                                    { text: 'Available', class: 'bg-green-100 text-green-800' },
+                                    { text: 'Busy', class: 'bg-yellow-100 text-yellow-800' },
+                                    { text: 'Offline', class: 'bg-red-100 text-red-800' }
+                                ];
+                                const randomStatus = statuses[Math.floor(Math.random() * statuses.length)];
+                                statusElement.textContent = randomStatus.text;
+                                statusElement.className = `px-2 py-1 ${randomStatus.class} rounded text-xs`;
+                            }
+                        }
+                    });
+                }, 15000);
+            }
+            
+            showNotification(message, type = 'info') {
+                const notification = document.createElement('div');
+                notification.className = `fixed top-20 right-4 p-4 rounded-lg shadow-lg z-40 max-w-sm`;
+                
+                const typeConfig = {
+                    success: 'bg-green-600 text-white',
+                    error: 'bg-red-600 text-white',
+                    warning: 'bg-yellow-600 text-white',
+                    info: 'bg-blue-600 text-white'
+                };
+                
+                notification.className += ` ${typeConfig[type]}`;
+                notification.innerHTML = `
+                    <div class="flex items-center space-x-3">
+                        <div class="flex-shrink-0">
+                            ${this.getNotificationIcon(type)}
+                        </div>
+                        <div class="text-sm font-medium">${message}</div>
+                    </div>
+                `;
+                
+                document.body.appendChild(notification);
+                
+                anime({
+                    targets: notification,
+                    translateX: [300, 0],
+                    opacity: [0, 1],
+                    duration: 300,
+                    easing: 'easeOutQuart'
+                });
+                
+                setTimeout(() => {
+                    anime({
+                        targets: notification,
+                        translateX: [0, 300],
+                        opacity: [1, 0],
+                        duration: 300,
+                        easing: 'easeInQuart',
+                        complete: () => notification.remove()
+                    });
+                }, 4000);
+            }
+            
+            getNotificationIcon(type) {
+                const icons = {
+                    success: '✅',
+                    error: '❌',
+                    warning: '⚠️',
+                    info: 'ℹ️'
+                };
+                return icons[type] || 'ℹ️';
+            }
+        }
+        
+        // Initialize referral system when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            new ReferralSystem();
+        });
+    </script>
+    <script src="main.js"></script>
+</body>
+</html>

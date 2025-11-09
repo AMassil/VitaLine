@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Assessment Dashboard - EmergencyConnect</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Inter+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .mono { font-family: 'Inter Mono', monospace; }
+        .connection-pulse { animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        .medical-card { backdrop-filter: blur(10px); background: rgba(255, 255, 255, 0.95); }
+        .triage-red { border-left: 4px solid #dc2626; background: rgba(220, 38, 38, 0.05); }
+        .triage-yellow { border-left: 4px solid #d97706; background: rgba(217, 119, 6, 0.05); }
+        .triage-green { border-left: 4px solid #059669; background: rgba(5, 150, 105, 0.05); }
+        .body-part { cursor: pointer; transition: all 0.2s; }
+        .body-part:hover { fill: rgba(59, 130, 246, 0.3); }
+        .body-part.selected { fill: rgba(220, 38, 38, 0.5); }
+        .vital-alert { animation: vitalAlert 1s infinite; }
+        @keyframes vitalAlert { 0%, 100% { background-color: rgba(220, 38, 38, 0.1); } 50% { background-color: rgba(220, 38, 38, 0.2); } }
+        .pain-scale { background: linear-gradient(to right, #10b981, #f59e0b, #ef4444); }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Navigation Bar -->
+    <nav class="bg-white shadow-lg border-b-2 border-blue-600 fixed w-full top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <div class="flex items-center space-x-4">
+                    <div class="flex items-center space-x-2">
+                        <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                            <span class="text-white font-bold text-sm">EC</span>
+                        </div>
+                        <span class="text-xl font-bold text-gray-900">EmergencyConnect</span>
+                    </div>
+                    <div class="hidden md:flex items-center space-x-4">
+                        <span class="text-sm text-gray-600">Patient Assessment Dashboard</span>
+                    </div>
+                </div>
+                
+                <div class="flex items-center space-x-6">
+                    <!-- Connection Status -->
+                    <div class="flex items-center space-x-2">
+                        <div class="w-3 h-3 bg-green-500 rounded-full connection-pulse"></div>
+                        <span class="text-sm font-medium text-gray-700">Connected</span>
+                    </div>
+                    
+                    <!-- Patient Info -->
+                    <div class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
+                        Patient: John Doe (45M)
+                    </div>
+                    
+                    <!-- Navigation Links -->
+                    <div class="flex space-x-4">
+                        <a href="index.html" class="text-gray-600 hover:text-blue-600 transition-colors">Video Conference</a>
+                        <a href="dashboard.html" class="text-blue-600 font-medium border-b-2 border-blue-600 pb-1">Assessment Dashboard</a>
+                        <a href="referral.html" class="text-gray-600 hover:text-blue-600 transition-colors">Referral System</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="pt-16 min-h-screen bg-gradient-to-br from-blue-50 to-red-50">
+        <!-- Header -->
+        <div class="bg-white shadow-sm border-b">
+            <div class="max-w-7xl mx-auto px-4 py-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h1 class="text-3xl font-bold text-gray-900">Patient Assessment Dashboard</h1>
+                        <p class="text-gray-600 mt-1">Comprehensive emergency evaluation and triage management</p>
+                    </div>
+                    <div class="flex space-x-3">
+                        <button id="save-assessment" class="px-6 py-3 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition-colors">
+                            💾 Save Assessment
+                        </button>
+                        <button id="print-report" class="px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors">
+                            🖨️ Print Report
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dashboard Content -->
+        <div class="max-w-7xl mx-auto px-4 py-6">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Left Column - Patient Info & Vitals -->
+                <div class="lg:col-span-1 space-y-6">
+                    <!-- Patient Information -->
+                    <div class="medical-card rounded-xl p-6 shadow-lg">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                            👤 Patient Information
+                            <span class="ml-2 px-2 py-1 bg-yellow-100 text-yellow-800 rounded text-xs font-medium">URGENT</span>
+                        </h3>
+                        
+                        <div class="space-y-4">
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Name</label>
+                                    <input type="text" value="John Doe" class="w-full p-2 border border-gray-300 rounded-lg bg-gray-50" readonly>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Age</label>
+                                    <input type="text" value="45 years" class="w-full p-2 border border-gray-300 rounded-lg bg-gray-50" readonly>
+                                </div>
+                            </div>
+                            
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Gender</label>
+                                    <input type="text" value="Male" class="w-full p-2 border border-gray-300 rounded-lg bg-gray-50" readonly>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Weight</label>
+                                    <input type="text" value="78 kg" class="w-full p-2 border border-gray-300 rounded-lg bg-gray-50" readonly>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Emergency Contact</label>
+                                <input type="text" value="Jane Doe - (555) 123-4567" class="w-full p-2 border border-gray-300 rounded-lg bg-gray-50" readonly>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Real-time Vital Signs -->
+                    <div class="medical-card rounded-xl p-6 shadow-lg">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                            📊 Vital Signs Monitor
+                            <span class="ml-2 w-3 h-3 bg-green-500 rounded-full connection-pulse"></span>
+                        </h3>
+                        
+                        <div class="space-y-4">
+                            <!-- Heart Rate -->
+                            <div class="vital-sign-item">
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="text-sm font-medium text-gray-700">Heart Rate</span>
+                                    <span id="heart-rate-value" class="text-lg font-bold text-red-600 mono">87 bpm</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-2">
+                                    <div id="heart-rate-bar" class="bg-red-500 h-2 rounded-full" style="width: 72%"></div>
+                                </div>
+                                <div id="heart-rate-chart" class="h-16 mt-2"></div>
+                            </div>
+                            
+                            <!-- Blood Pressure -->
+                            <div class="vital-sign-item">
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="text-sm font-medium text-gray-700">Blood Pressure</span>
+                                    <span id="blood-pressure-value" class="text-lg font-bold text-blue-600 mono">142/89</span>
+                                </div>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div class="w-full bg-gray-200 rounded-full h-2">
+                                        <div id="systolic-bar" class="bg-blue-500 h-2 rounded-full" style="width: 78%"></div>
+                                    </div>
+                                    <div class="w-full bg-gray-200 rounded-full h-2">
+                                        <div id="diastolic-bar" class="bg-purple-500 h-2 rounded-full" style="width: 59%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Oxygen Saturation -->
+                            <div class="vital-sign-item">
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="text-sm font-medium text-gray-700">O2 Saturation</span>
+                                    <span id="oxygen-sat-value" class="text-lg font-bold text-green-600 mono">96%</span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-2">
+                                    <div id="oxygen-sat-bar" class="bg-green-500 h-2 rounded-full" style="width: 96%"></div>
+                                </div>
+                            </div>
+                            
+                            <!-- Temperature -->
+                            <div class="vital-sign-item">
+                                <div class="flex justify-between items-center mb-2">
+                                    <span class="text-sm font-medium text-gray-700">Temperature</span>
+                                    <span id="temperature-value" class="text-lg font-bold text-orange-600 mono">37.2°C</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                            <p class="text-sm text-yellow-800">
+                                <strong>Alert:</strong> Elevated blood pressure detected. Monitor closely.
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <!-- Pain Assessment -->
+                    <div class="medical-card rounded-xl p-6 shadow-lg">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Pain Assessment</h3>
+                        
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Pain Level (0-10)</label>
+                                <div class="pain-scale h-6 rounded-full mb-2 relative">
+                                    <div id="pain-indicator" class="absolute w-4 h-4 bg-white border-2 border-gray-800 rounded-full -mt-0 shadow-lg" style="left: 30%"></div>
+                                </div>
+                                <div class="flex justify-between text-xs text-gray-600">
+                                    <span>No Pain</span>
+                                    <span>Moderate</span>
+                                    <span>Severe</span>
+                                </div>
+                                <div class="text-center mt-2">
+                                    <span id="pain-value" class="text-2xl font-bold text-orange-600">3/10</span>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Pain Location</label>
+                                <select class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                                    <option>Chest area</option>
+                                    <option>Left arm</option>
+                                    <option>Shoulder</option>
+                                    <option>Neck</option>
+                                    <option>Other</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Center Column - Assessment Tools -->
+                <div class="lg:col-span-1 space-y-6">
+                    <!-- Interactive Body Diagram -->
+                    <div class="medical-card rounded-xl p-6 shadow-lg">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Symptom Assessment</h3>
+                        <p class="text-sm text-gray-600 mb-4">Click on body areas where patient reports symptoms</p>
+                        
+                        <!-- Simplified Body Diagram -->
+                        <div class="flex justify-center">
+                            <svg width="200" height="400" viewBox="0 0 200 400" class="border border-gray-300 rounded-lg bg-white">
+                                <!-- Head -->
+                                <circle cx="100" cy="40" r="25" class="body-part" data-part="head" fill="#e5e7eb" stroke="#9ca3af" stroke-width="2"/>
+                                
+                                <!-- Torso -->
+                                <rect x="75" y="65" width="50" height="80" rx="10" class="body-part" data-part="chest" fill="#e5e7eb" stroke="#9ca3af" stroke-width="2"/>
+                                
+                                <!-- Abdomen -->
+                                <rect x="80" y="145" width="40" height="60" rx="5" class="body-part" data-part="abdomen" fill="#e5e7eb" stroke="#9ca3af" stroke-width="2"/>
+                                
+                                <!-- Left Arm -->
+                                <rect x="45" y="75" width="25" height="70" rx="12" class="body-part" data-part="left-arm" fill="#e5e7eb" stroke="#9ca3af" stroke-width="2"/>
+                                
+                                <!-- Right Arm -->
+                                <rect x="130" y="75" width="25" height="70" rx="12" class="body-part" data-part="right-arm" fill="#e5e7eb" stroke="#9ca3af" stroke-width="2"/>
+                                
+                                <!-- Left Leg -->
+                                <rect x="80" y="205" width="20" height="90" rx="10" class="body-part" data-part="left-leg" fill="#e5e7eb" stroke="#9ca3af" stroke-width="2"/>
+                                
+                                <!-- Right Leg -->
+                                <rect x="100" y="205" width="20" height="90" rx="10" class="body-part" data-part="right-leg" fill="#e5e7eb" stroke="#9ca3af" stroke-width="2"/>
+                                
+                                <!-- Feet -->
+                                <ellipse cx="90" cy="310" rx="12" ry="8" class="body-part" data-part="left-foot" fill="#e5e7eb" stroke="#9ca3af" stroke-width="2"/>
+                                <ellipse cx="110" cy="310" rx="12" ry="8" class="body-part" data-part="right-foot" fill="#e5e7eb" stroke="#9ca3af" stroke-width="2"/>
+                            </svg>
+                        </div>
+                        
+                        <!-- Selected Symptoms -->
+                        <div class="mt-4">
+                            <h4 class="text-sm font-medium text-gray-700 mb-2">Selected Symptoms:</h4>
+                            <div id="selected-symptoms" class="space-y-2">
+                                <div class="flex items-center justify-between p-2 bg-red-50 border border-red-200 rounded">
+                                    <span class="text-sm text-red-800">Chest (Pain, Pressure)</span>
+                                    <button class="text-red-600 hover:text-red-800">×</button>
+                                </div>
+                                <div class="flex items-center justify-between p-2 bg-orange-50 border border-orange-200 rounded">
+                                    <span class="text-sm text-orange-800">Left Arm (Numbness)</span>
+                                    <button class="text-orange-600 hover:text-orange-800">×</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Triage Assessment -->
+                    <div class="medical-card rounded-xl p-6 shadow-lg">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Triage Assessment</h3>
+                        
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Triage Level</label>
+                                <div class="grid grid-cols-1 gap-2">
+                                    <label class="flex items-center p-3 border border-red-200 bg-red-50 rounded-lg cursor-pointer">
+                                        <input type="radio" name="triage" value="red" class="mr-3 text-red-600">
+                                        <div>
+                                            <div class="font-medium text-red-800">🔴 Immediate (Red)</div>
+                                            <div class="text-xs text-red-600">Life-threatening, requires immediate attention</div>
+                                        </div>
+                                    </label>
+                                    
+                                    <label class="flex items-center p-3 border border-yellow-200 bg-yellow-50 rounded-lg cursor-pointer">
+                                        <input type="radio" name="triage" value="yellow" class="mr-3 text-yellow-600" checked>
+                                        <div>
+                                            <div class="font-medium text-yellow-800">🟡 Urgent (Yellow)</div>
+                                            <div class="text-xs text-yellow-600">Serious but stable, can wait briefly</div>
+                                        </div>
+                                    </label>
+                                    
+                                    <label class="flex items-center p-3 border border-green-200 bg-green-50 rounded-lg cursor-pointer">
+                                        <input type="radio" name="triage" value="green" class="mr-3 text-green-600">
+                                        <div>
+                                            <div class="font-medium text-green-800">🟢 Delayed (Green)</div>
+                                            <div class="text-xs text-green-600">Minor injuries, can wait for treatment</div>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Chief Complaint</label>
+                                <textarea class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" rows="3" placeholder="Patient's main complaint...">Chest pain radiating to left arm, started 2 hours ago during exercise. Patient describes pressure-like sensation with numbness in left arm.</textarea>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Primary Assessment (ABCDE)</label>
+                                <div class="space-y-2">
+                                    <div class="flex items-center justify-between p-2 bg-green-50 border border-green-200 rounded">
+                                        <span class="text-sm font-medium text-green-800">Airway</span>
+                                        <span class="text-sm text-green-600">✅ Patent</span>
+                                    </div>
+                                    <div class="flex items-center justify-between p-2 bg-green-50 border border-green-200 rounded">
+                                        <span class="text-sm font-medium text-green-800">Breathing</span>
+                                        <span class="text-sm text-green-600">✅ Normal</span>
+                                    </div>
+                                    <div class="flex items-center justify-between p-2 bg-yellow-50 border border-yellow-200 rounded">
+                                        <span class="text-sm font-medium text-yellow-800">Circulation</span>
+                                        <span class="text-sm text-yellow-600">⚠️ Elevated BP</span>
+                                    </div>
+                                    <div class="flex items-center justify-between p-2 bg-green-50 border border-green-200 rounded">
+                                        <span class="text-sm font-medium text-green-800">Disability</span>
+                                        <span class="text-sm text-green-600">✅ Alert</span>
+                                    </div>
+                                    <div class="flex items-center justify-between p-2 bg-green-50 border border-green-200 rounded">
+                                        <span class="text-sm font-medium text-green-800">Exposure</span>
+                                        <span class="text-sm text-green-600">✅ Normal</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Right Column - Medical History & Timeline -->
+                <div class="lg:col-span-1 space-y-6">
+                    <!-- Medical History -->
+                    <div class="medical-card rounded-xl p-6 shadow-lg">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Medical History</h3>
+                        
+                        <div class="space-y-4">
+                            <div>
+                                <h4 class="text-sm font-medium text-gray-700 mb-2">Known Allergies</h4>
+                                <div class="space-y-1">
+                                    <div class="flex items-center space-x-2">
+                                        <span class="w-2 h-2 bg-red-500 rounded-full"></span>
+                                        <span class="text-sm text-gray-600">Penicillin (severe rash)</span>
+                                    </div>
+                                    <div class="flex items-center space-x-2">
+                                        <span class="w-2 h-2 bg-yellow-500 rounded-full"></span>
+                                        <span class="text-sm text-gray-600">Shellfish (mild reaction)</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <h4 class="text-sm font-medium text-gray-700 mb-2">Current Medications</h4>
+                                <div class="space-y-1">
+                                    <div class="flex items-center justify-between p-2 bg-gray-50 rounded">
+                                        <span class="text-sm text-gray-700">Lisinopril 10mg</span>
+                                        <span class="text-xs text-gray-500">Daily</span>
+                                    </div>
+                                    <div class="flex items-center justify-between p-2 bg-gray-50 rounded">
+                                        <span class="text-sm text-gray-700">Metformin 500mg</span>
+                                        <span class="text-xs text-gray-500">Twice daily</span>
+                                    </div>
+                                    <div class="flex items-center justify-between p-2 bg-gray-50 rounded">
+                                        <span class="text-sm text-gray-700">Aspirin 81mg</span>
+                                        <span class="text-xs text-gray-500">Daily</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <h4 class="text-sm font-medium text-gray-700 mb-2">Medical Conditions</h4>
+                                <div class="space-y-1">
+                                    <div class="flex items-center space-x-2">
+                                        <span class="w-2 h-2 bg-blue-500 rounded-full"></span>
+                                        <span class="text-sm text-gray-600">Hypertension (controlled)</span>
+                                    </div>
+                                    <div class="flex items-center space-x-2">
+                                        <span class="w-2 h-2 bg-blue-500 rounded-full"></span>
+                                        <span class="text-sm text-gray-600">Type 2 Diabetes (controlled)</span>
+                                    </div>
+                                    <div class="flex items-center space-x-2">
+                                        <span class="w-2 h-2 bg-green-500 rounded-full"></span>
+                                        <span class="text-sm text-gray-600">No known heart disease</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Assessment Timeline -->
+                    <div class="medical-card rounded-xl p-6 shadow-lg">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Assessment Timeline</h3>
+                        
+                        <div class="space-y-4 max-h-96 overflow-y-auto">
+                            <div class="flex items-start space-x-3">
+                                <div class="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                                    <span class="text-xs font-medium text-blue-600">T0</span>
+                                </div>
+                                <div class="flex-1">
+                                    <p class="text-sm font-medium text-gray-900">Initial Contact</p>
+                                    <p class="text-xs text-gray-600 mono">14:23:45</p>
+                                    <p class="text-sm text-gray-600 mt-1">Patient connected via video conference. Initial assessment initiated.</p>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-start space-x-3">
+                                <div class="flex-shrink-0 w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                                    <span class="text-xs font-medium text-green-600">T+2</span>
+                                </div>
+                                <div class="flex-1">
+                                    <p class="text-sm font-medium text-gray-900">Vital Signs Recorded</p>
+                                    <p class="text-xs text-gray-600 mono">14:25:12</p>
+                                    <p class="text-sm text-gray-600 mt-1">Heart rate: 87 bpm, BP: 142/89, O2 Sat: 96%, Temp: 37.2°C</p>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-start space-x-3">
+                                <div class="flex-shrink-0 w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center">
+                                    <span class="text-xs font-medium text-yellow-600">T+5</span>
+                                </div>
+                                <div class="flex-1">
+                                    <p class="text-sm font-medium text-gray-900">Symptom Assessment</p>
+                                    <p class="text-xs text-gray-600 mono">14:28:30</p>
+                                    <p class="text-sm text-gray-600 mt-1">Chest pain and left arm numbness documented. Pain level: 3/10</p>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-start space-x-3">
+                                <div class="flex-shrink-0 w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
+                                    <span class="text-xs font-medium text-orange-600">T+8</span>
+                                </div>
+                                <div class="flex-1">
+                                    <p class="text-sm font-medium text-gray-900">Triage Level Assigned</p>
+                                    <p class="text-xs text-gray-600 mono">14:31:45</p>
+                                    <p class="text-sm text-gray-600 mt-1">Patient classified as URGENT (Yellow) - potential cardiac event</p>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-start space-x-3">
+                                <div class="flex-shrink-0 w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
+                                    <span class="text-xs font-medium text-red-600">T+12</span>
+                                </div>
+                                <div class="flex-1">
+                                    <p class="text-sm font-medium text-gray-900">Emergency Protocol Activated</p>
+                                    <p class="text-xs text-gray-600 mono">14:35:20</p>
+                                    <p class="text-sm text-gray-600 mt-1">Cardiac emergency protocol initiated. Ambulance dispatch requested.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Quick Actions -->
+                    <div class="medical-card rounded-xl p-6 shadow-lg">
+                        <h3 class="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
+                        
+                        <div class="grid grid-cols-2 gap-3">
+                            <button id="order-ecg" class="px-4 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium">
+                                📈 Order ECG
+                            </button>
+                            <button id="administer-oxygen" class="px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium">
+                                💨 Oxygen Therapy
+                            </button>
+                            <button id="start-iv" class="px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium">
+                                💉 Start IV Line
+                            </button>
+                            <button id="give-aspirin" class="px-4 py-3 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors text-sm font-medium">
+                                💊 Aspirin 325mg
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t mt-12">
+        <div class="max-w-7xl mx-auto px-4 py-6">
+            <div class="text-center text-sm text-gray-600">
+                <p>&copy; 2025 EmergencyConnect. Secure medical video conferencing platform for emergency healthcare.</p>
+                <p class="mt-1">HIPAA compliant • End-to-end encrypted • Real-time emergency assessment</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Dashboard-specific JavaScript
+        class AssessmentDashboard {
+            constructor() {
+                this.selectedBodyParts = [];
+                this.vitalSignsHistory = {
+                    heartRate: [82, 85, 87, 89, 87],
+                    timestamps: ['14:23', '14:24', '14:25', '14:26', '14:27']
+                };
+                
+                this.init();
+            }
+            
+            init() {
+                this.initializeBodyDiagram();
+                this.initializeVitalSignsCharts();
+                this.initializeEventListeners();
+                this.startVitalSignsMonitoring();
+            }
+            
+            initializeBodyDiagram() {
+                const bodyParts = document.querySelectorAll('.body-part');
+                bodyParts.forEach(part => {
+                    part.addEventListener('click', (e) => {
+                        this.toggleBodyPart(e.target);
+                    });
+                });
+            }
+            
+            toggleBodyPart(part) {
+                const partName = part.getAttribute('data-part');
+                
+                if (part.classList.contains('selected')) {
+                    part.classList.remove('selected');
+                    this.selectedBodyParts = this.selectedBodyParts.filter(p => p !== partName);
+                } else {
+                    part.classList.add('selected');
+                    this.selectedBodyParts.push(partName);
+                }
+                
+                this.updateSelectedSymptoms();
+            }
+            
+            updateSelectedSymptoms() {
+                const container = document.getElementById('selected-symptoms');
+                container.innerHTML = '';
+                
+                this.selectedBodyParts.forEach(part => {
+                    const div = document.createElement('div');
+                    div.className = 'flex items-center justify-between p-2 bg-blue-50 border border-blue-200 rounded';
+                    div.innerHTML = `
+                        <span class="text-sm text-blue-800">${this.formatBodyPartName(part)}</span>
+                        <button class="text-blue-600 hover:text-blue-800" onclick="this.parentElement.remove()">×</button>
+                    `;
+                    container.appendChild(div);
+                });
+            }
+            
+            formatBodyPartName(part) {
+                return part.split('-').map(word => 
+                    word.charAt(0).toUpperCase() + word.slice(1)
+                ).join(' ');
+            }
+            
+            initializeVitalSignsCharts() {
+                // Heart Rate Chart
+                const heartRateChart = echarts.init(document.getElementById('heart-rate-chart'));
+                const heartRateOption = {
+                    grid: { top: 5, right: 5, bottom: 5, left: 5 },
+                    xAxis: { 
+                        type: 'category', 
+                        data: this.vitalSignsHistory.timestamps,
+                        show: false
+                    },
+                    yAxis: { type: 'value', show: false },
+                    series: [{
+                        data: this.vitalSignsHistory.heartRate,
+                        type: 'line',
+                        smooth: true,
+                        lineStyle: { color: '#ef4444', width: 2 },
+                        itemStyle: { color: '#ef4444' },
+                        symbol: 'circle',
+                        symbolSize: 4
+                    }]
+                };
+                heartRateChart.setOption(heartRateOption);
+            }
+            
+            initializeEventListeners() {
+                // Quick Actions
+                document.getElementById('order-ecg')?.addEventListener('click', () => {
+                    this.showActionModal('ECG Ordered', '12-lead ECG has been ordered and will be performed immediately.');
+                });
+                
+                document.getElementById('administer-oxygen')?.addEventListener('click', () => {
+                    this.showActionModal('Oxygen Therapy', 'Oxygen therapy initiated at 4L/min via nasal cannula.');
+                });
+                
+                document.getElementById('start-iv')?.addEventListener('click', () => {
+                    this.showActionModal('IV Access', 'IV line established in left antecubital fossa.');
+                });
+                
+                document.getElementById('give-aspirin')?.addEventListener('click', () => {
+                    this.showActionModal('Medication Administered', 'Aspirin 325mg chewed and swallowed.');
+                });
+                
+                // Dashboard Actions
+                document.getElementById('save-assessment')?.addEventListener('click', () => {
+                    this.saveAssessment();
+                });
+                
+                document.getElementById('print-report')?.addEventListener('click', () => {
+                    this.printReport();
+                });
+            }
+            
+            showActionModal(title, message) {
+                const modal = document.createElement('div');
+                modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+                modal.innerHTML = `
+                    <div class="bg-white rounded-xl p-8 max-w-md w-full mx-4">
+                        <div class="text-center">
+                            <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <span class="text-2xl">✅</span>
+                            </div>
+                            <h3 class="text-xl font-bold text-gray-900 mb-2">${title}</h3>
+                            <p class="text-gray-600 mb-6">${message}</p>
+                            <button class="w-full px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors" onclick="this.parentElement.parentElement.parentElement.remove()">
+                                Confirm
+                            </button>
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+            }
+            
+            saveAssessment() {
+                const notification = document.createElement('div');
+                notification.className = 'fixed top-20 right-4 bg-green-600 text-white p-4 rounded-lg shadow-lg z-40';
+                notification.innerHTML = `
+                    <div class="flex items-center space-x-3">
+                        <span>✅</span>
+                        <span class="text-sm font-medium">Assessment saved successfully</span>
+                    </div>
+                `;
+                document.body.appendChild(notification);
+                
+                setTimeout(() => notification.remove(), 3000);
+            }
+            
+            printReport() {
+                const notification = document.createElement('div');
+                notification.className = 'fixed top-20 right-4 bg-blue-600 text-white p-4 rounded-lg shadow-lg z-40';
+                notification.innerHTML = `
+                    <div class="flex items-center space-x-3">
+                        <span>🖨️</span>
+                        <span class="text-sm font-medium">Report sent to printer</span>
+                    </div>
+                `;
+                document.body.appendChild(notification);
+                
+                setTimeout(() => notification.remove(), 3000);
+            }
+            
+            startVitalSignsMonitoring() {
+                setInterval(() => {
+                    // Simulate vital signs changes
+                    const heartRateElement = document.getElementById('heart-rate-value');
+                    const currentHR = parseInt(heartRateElement.textContent);
+                    const newHR = currentHR + Math.floor(Math.random() * 6) - 3; // ±3 bpm
+                    
+                    if (newHR >= 60 && newHR <= 120) {
+                        heartRateElement.textContent = `${newHR} bpm`;
+                        
+                        // Update progress bar
+                        const percentage = (newHR - 60) / 60 * 100; // 60-120 bpm range
+                        document.getElementById('heart-rate-bar').style.width = `${Math.min(percentage, 100)}%`;
+                    }
+                }, 5000);
+            }
+        }
+        
+        // Initialize dashboard when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            new AssessmentDashboard();
+        });
+    </script>
+    <script src="main.js"></script>
+</body>
+</html>
